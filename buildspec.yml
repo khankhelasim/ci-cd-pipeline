@@ -4,10 +4,10 @@ phases:
   install:
     commands:
       - echo Installing kubectl...
-      - curl -LO "https://dl.k8s.io/release/$(curl -Ls https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-      - chmod +x kubectl
-      - mv kubectl /usr/local/bin/
-      - kubectl version --client
+      - curl -o kubectl https://amazon-eks.s3.ap-northeast-1.amazonaws.com/1.21.2/2021-07-05/bin/linux/amd64/kubectl
+      - chmod +x ./kubectl
+      - mv ./kubectl /usr/local/bin
+      - kubectl version --short --client
       - echo Installing AWS IAM Authenticator...
       - curl -o aws-iam-authenticator https://amazon-eks.s3.ap-northeast-1.amazonaws.com/1.21.2/2021-07-05/bin/linux/amd64/aws-iam-authenticator
       - chmod +x ./aws-iam-authenticator
@@ -25,21 +25,19 @@ phases:
       - docker build -t ci-cd-pipeline .
       - docker tag ci-cd-pipeline:latest 503561433330.dkr.ecr.ap-northeast-1.amazonaws.com/ci-cd-pipeline:latest
 
- post_build:
-  commands:
-    - echo Build completed on `date`
-    - echo Pushing the Docker image...
-    - aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin 503561433330.dkr.ecr.ap-northeast-1.amazonaws.com
-    - docker images
-    - docker push 503561433330.dkr.ecr.ap-northeast-1.amazonaws.com/ci-cd-pipeline:latest || (echo "docker push failed" && exit 1)
-    - echo Updating kubeconfig...
-    - aws eks update-kubeconfig --region ap-northeast-1 --name eks
-    - echo Verifying kubeconfig...
-    - kubectl config current-context
-    - kubectl get nodes
-    - echo Deploying to Kubernetes cluster...
-    - kubectl apply -f k8s-deployment.yml
-    - kubectl rollout restart deployment $(kubectl get deployment -o=jsonpath='{.items[0].metadata.name}')
-    - kubectl get deployment
-
-
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker image...
+      - aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin 503561433330.dkr.ecr.ap-northeast-1.amazonaws.com
+      - docker images
+      - docker push 503561433330.dkr.ecr.ap-northeast-1.amazonaws.com/ci-cd-pipeline:latest || (echo "docker push failed" && exit 1)
+      - echo Updating kubeconfig...
+      - aws eks update-kubeconfig --region ap-northeast-1 --name eks
+      - echo Verifying kubeconfig...
+      - kubectl config current-context
+      - kubectl get nodes
+      - echo Deploying to Kubernetes cluster...
+      - kubectl apply -f k8s-deployment.yml
+      - kubectl rollout restart deployment $(kubectl get deployment -o=jsonpath='{.items[0].metadata.name}')
+      - kubectl get deployment
